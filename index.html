@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Converter</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --card: #21262d;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --accent-hover: #79b8ff;
+  --success: #3fb950;
+  --danger: #f85149;
+  --warn: #d29922;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --bright: #f0f6fc;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+}
+
+.container { max-width: 740px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 2rem; }
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #58a6ff, #bc8cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-top: 0.6rem;
+  font-weight: 500;
+}
+.badge.ok      { background: rgba(63,185,80,.15);  color: var(--success); border: 1px solid rgba(63,185,80,.25); }
+.badge.err     { background: rgba(248,81,73,.12);  color: var(--danger);  border: 1px solid rgba(248,81,73,.25); }
+.badge.loading { background: rgba(88,166,255,.1);  color: var(--accent);  border: 1px solid rgba(88,166,255,.2); }
+.badge.warn    { background: rgba(210,153,34,.12); color: var(--warn);    border: 1px solid rgba(210,153,34,.25); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.85rem 0.25rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  letter-spacing: 0.01em;
+}
+
+.tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+
+.tab.active {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+.tab-icon { font-size: 1rem; line-height: 1; }
+
+/* Body */
+.body { padding: 1.5rem; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(88,166,255,.05);
+}
+
+.upload-zone.drag-reject {
+  border-color: var(--danger);
+  background: rgba(248,81,73,.05);
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.up-icon { font-size: 2.2rem; margin-bottom: 0.6rem; color: var(--muted); }
+
+.upload-zone h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bright);
+  margin-bottom: 0.25rem;
+}
+
+.upload-zone p { font-size: 0.78rem; color: var(--muted); }
+
+/* File info bar */
+.file-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0.65rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.file-bar.show { display: flex; }
+
+.file-bar-icon { font-size: 1.4rem; }
+
+.file-bar-info { flex: 1; min-width: 0; }
+
+.file-bar-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-bar-size { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+
+.file-size-warn {
+  font-size: 0.7rem;
+  color: var(--warn);
+  margin-top: 2px;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  border-radius: 5px;
+  transition: all 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.remove-btn:hover { color: var(--danger); background: rgba(248,81,73,.1); }
+
+/* Options grid */
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+
+.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.opt.span2 { grid-column: 1 / -1; }
+
+.opt label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.opt select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--bright);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.18s;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.opt select:focus { border-color: var(--accent); }
+
+/* Slider */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(88,166,255,.2);
+}
+
+.slider-val {
+  min-width: 30px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.crf-hint {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Convert button */
+.conv-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 9px;
+  color: #000;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+}
+
+.conv-btn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,166,255,.3); }
+.conv-btn:active:not(:disabled) { transform: translateY(0); }
+.conv-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.cancel-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 0.5rem;
+  display: none;
+}
+.cancel-btn.show { display: block; }
+.cancel-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(248,81,73,.06); }
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2.5px solid rgba(0,0,0,.25);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Progress bar */
+.progress-wrap {
+  display: none;
+  margin-top: 1rem;
+}
+.progress-wrap.show { display: block; }
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.progress-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.progress-pct {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.progress-track {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #bc8cff);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  width: 0%;
+  position: relative;
+}
+
+.progress-fill.indeterminate {
+  width: 40% !important;
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(280%); }
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* Result */
+.result { margin-top: 1.25rem; display: none; }
+.result.show { display: block; }
+
+.res-success {
+  background: rgba(63,185,80,.08);
+  border: 1px solid rgba(63,185,80,.3);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+}
+
+.res-error {
+  background: rgba(248,81,73,.08);
+  border: 1px solid rgba(248,81,73,.3);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+}
+
+.res-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 0.75rem;
+}
+
+.res-success .res-title { color: var(--success); }
+.res-error  .res-title { color: var(--danger); }
+
+.stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat { display: flex; flex-direction: column; gap: 2px; }
+
+.stat-lbl {
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stat-val { font-size: 0.9rem; font-weight: 700; color: var(--bright); }
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0.55rem 1.1rem;
+  background: var(--success);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.18s;
+}
+
+.dl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.err-detail {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.72rem;
+  color: var(--danger);
+  background: rgba(248,81,73,.06);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(248,81,73,.15);
+}
+
+.new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.new-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.05); }
+
+.info-box {
+  background: rgba(88,166,255,.06);
+  border: 1px solid rgba(88,166,255,.2);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 500px) {
+  .options { grid-template-columns: 1fr; }
+  .opt.span2 { grid-column: 1; }
+  .tab span { display: none; }
+  header h1 { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Media Converter</h1>
+    <p>Convert, extract &amp; compress — runs 100% in your browser, no uploads</p>
+    <div id="status-badge" class="badge loading">⟳ Initialising…</div>
+  </header>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" data-mode="convert" onclick="setMode('convert')">
+        <span class="tab-icon">⇄</span><span>Convert</span>
+      </button>
+      <button class="tab" data-mode="extract" onclick="setMode('extract')">
+        <span class="tab-icon">♪</span><span>Extract Audio</span>
+      </button>
+      <button class="tab" data-mode="compress_audio" onclick="setMode('compress_audio')">
+        <span class="tab-icon">◈</span><span>Compress Audio</span>
+      </button>
+      <button class="tab" data-mode="compress_video" onclick="setMode('compress_video')">
+        <span class="tab-icon">▣</span><span>Compress Video</span>
+      </button>
+    </div>
+
+    <div class="body">
+      <div id="info-box" class="info-box" style="display:none"></div>
+
+      <div class="upload-zone" id="upload-zone"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <input type="file" id="file-input" accept="audio/*,video/*" onchange="onFileSelect(event)">
+        <div class="up-icon">⬆</div>
+        <h3>Drop your file here</h3>
+        <p id="accept-hint">Supports all major audio &amp; video formats</p>
+      </div>
+
+      <div class="file-bar" id="file-bar">
+        <div class="file-bar-icon" id="file-icon">🎵</div>
+        <div class="file-bar-info">
+          <div class="file-bar-name" id="file-name"></div>
+          <div class="file-bar-size" id="file-size"></div>
+          <div class="file-size-warn" id="file-warn"></div>
+        </div>
+        <button class="remove-btn" onclick="removeFile()" title="Remove file">✕</button>
+      </div>
+
+      <div class="options" id="options"></div>
+
+      <button class="conv-btn" id="conv-btn" onclick="startConversion()" disabled>
+        <span id="btn-label">Select a file first</span>
+      </button>
+      <button class="cancel-btn" id="cancel-btn" onclick="cancelConversion()">✕ Cancel</button>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-header">
+          <span class="progress-label" id="progress-label">Processing…</span>
+          <span class="progress-pct" id="progress-pct"></span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill indeterminate" id="progress-fill"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="progress-elapsed"></span>
+          <span id="progress-eta"></span>
+        </div>
+      </div>
+
+      <div class="result" id="result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ffmpeg.wasm — single-thread build (no SharedArrayBuffer required) -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+
+<script>
+const { FFmpeg } = FFmpegWASM;
+const { fetchFile, toBlobURL } = FFmpegUtil;
+
+const AUDIO_FMTS = ['mp3','aac','flac','wav','ogg','m4a','opus','wma','aiff','alac','ac3'];
+const VIDEO_FMTS = ['mp4','mkv','avi','mov','webm','flv','m4v','wmv','ts','mpg','gif'];
+const AUDIO_SET  = new Set(['mp3','aac','flac','wav','ogg','m4a','opus','wma','aiff','alac','ac3','amr','mp2']);
+const VIDEO_SET  = new Set(['mp4','mkv','avi','mov','webm','flv','m4v','wmv','ts','mpg','mpeg','3gp','gif','rm']);
+const LOSSLESS   = new Set(['flac','wav','aiff','alac']);
+
+// 500 MB practical WASM limit; 2 GB is the hard JS ArrayBuffer ceiling
+const WARN_SIZE = 500 * 1024 * 1024;
+const MAX_SIZE  = 2 * 1024 * 1024 * 1024;
+
+let mode = 'convert';
+let file = null;
+let ffmpeg = null;
+let ffmpegReady = false;
+let cancelled = false;
+let elapsedTimer = null;
+let convStartTime = 0;
+let currentBlobUrl = null;
+
+// ── FFmpeg loading ─────────────────────────────────────────────────────────
+
+async function initFFmpeg() {
+  setBadge('loading', '⟳ Loading ffmpeg.wasm (~30 MB)…');
+  try {
+    ffmpeg = new FFmpeg();
+    const BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`,   'text/javascript'),
+      wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    ffmpegReady = true;
+    setBadge('ok', '✓ Ready — runs in your browser');
+  } catch (e) {
+    setBadge('err', '✗ Failed to load ffmpeg.wasm');
+    console.error(e);
+  }
+}
+
+function setBadge(cls, text) {
+  const el = document.getElementById('status-badge');
+  el.className = 'badge ' + cls;
+  el.textContent = text;
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+
+function ext(filename) {
+  const parts = filename.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
+function isAudio(e) { return AUDIO_SET.has(e); }
+function isVideo(e) { return VIDEO_SET.has(e); }
+
+function fmtBytes(b) {
+  if (b < 1024)       return b + ' B';
+  if (b < 1048576)    return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
+
+function fmtSecs(s) {
+  if (s < 60)  return Math.round(s) + 's';
+  const m = Math.floor(s / 60), sec = Math.round(s % 60);
+  return `${m}m ${sec.toString().padStart(2,'0')}s`;
+}
+
+function createNode(tag, cls, text) {
+  const el = document.createElement(tag);
+  if (cls)  el.className = cls;
+  if (text != null) el.textContent = text;
+  return el;
+}
+
+// ── File handling ──────────────────────────────────────────────────────────
+
+function onFileSelect(e) { const f = e.target.files[0]; if (f) loadFile(f); }
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+}
+
+function onDragLeave() {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const zone = document.getElementById('upload-zone');
+  zone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const e2 = ext(f.name);
+  if (!isAudio(e2) && !isVideo(e2)) {
+    zone.classList.add('drag-reject');
+    setTimeout(() => zone.classList.remove('drag-reject'), 1200);
+    return;
+  }
+  loadFile(f);
+}
+
+function loadFile(f) {
+  if (f.size > MAX_SIZE) {
+    showError(`File too large (${fmtBytes(f.size)}). Maximum supported size is 2 GB.`);
+    return;
+  }
+  file = f;
+  const e = ext(f.name);
+  document.getElementById('file-icon').textContent = isVideo(e) ? '🎬' : '🎵';
+  document.getElementById('file-name').textContent = f.name;
+  document.getElementById('file-size').textContent = fmtBytes(f.size);
+  const warn = document.getElementById('file-warn');
+  warn.textContent = f.size > WARN_SIZE
+    ? '⚠ Large file — conversion may be slow in-browser'
+    : '';
+  document.getElementById('file-bar').classList.add('show');
+  document.getElementById('upload-zone').style.display = 'none';
+  buildOptions();
+  updateBtn();
+  clearResult();
+}
+
+function removeFile() {
+  if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+  file = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-bar').classList.remove('show');
+  document.getElementById('upload-zone').style.display = '';
+  buildOptions();
+  updateBtn();
+  clearResult();
+}
+
+function clearResult() {
+  document.getElementById('result').className = 'result';
+  document.getElementById('result').innerHTML = '';
+  hideProgress();
+}
+
+// ── Options builder ────────────────────────────────────────────────────────
+
+function makeSelect(name, opts, def) {
+  const sel = document.createElement('select');
+  sel.name = name; sel.id = name;
+  opts.forEach(([v, l]) => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = l || v.toUpperCase();
+    if (v === def) o.selected = true;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+function makeOpt(label, el, span2) {
+  const d = document.createElement('div');
+  d.className = 'opt' + (span2 ? ' span2' : '');
+  const lbl = document.createElement('label');
+  lbl.textContent = label;
+  d.appendChild(lbl); d.appendChild(el);
+  return d;
+}
+
+function makeSlider(name, min, max, val, hint) {
+  const row = document.createElement('div');
+  row.className = 'slider-row';
+  const s = document.createElement('input');
+  s.type = 'range'; s.name = name; s.id = name;
+  s.min = min; s.max = max; s.value = val;
+  const disp = document.createElement('span');
+  disp.className = 'slider-val'; disp.textContent = val;
+  s.oninput = () => disp.textContent = s.value;
+  row.appendChild(s); row.appendChild(disp);
+  const wrap = document.createElement('div');
+  wrap.appendChild(row);
+  if (hint) {
+    const h = document.createElement('div');
+    h.className = 'crf-hint'; h.textContent = hint;
+    wrap.appendChild(h);
+  }
+  return wrap;
+}
+
+const BITRATE_OPTS = [
+  ['32k','32 kbps'],['48k','48 kbps'],['64k','64 kbps'],
+  ['96k','96 kbps'],['128k','128 kbps'],['160k','160 kbps'],
+  ['192k','192 kbps'],['256k','256 kbps'],['320k','320 kbps'],
+];
+
+const PRESET_OPTS = [
+  ['ultrafast','Ultra Fast'],['superfast','Super Fast'],['veryfast','Very Fast'],
+  ['faster','Faster'],['fast','Fast'],['medium','Medium (default)'],
+  ['slow','Slow'],['slower','Slower'],['veryslow','Very Slow (best)'],
+];
+
+function buildOptions() {
+  const grid = document.getElementById('options');
+  grid.innerHTML = '';
+  const e = file ? ext(file.name) : null;
+
+  if (mode === 'convert') {
+    let fmts = !e ? [...AUDIO_FMTS, ...VIDEO_FMTS]
+      : isAudio(e) ? AUDIO_FMTS
+      : isVideo(e) ? VIDEO_FMTS
+      : [...AUDIO_FMTS, ...VIDEO_FMTS];
+
+    const defaultFmt = (e && fmts.includes(e))
+      ? (fmts[0] === e ? fmts[1] || fmts[0] : fmts[0])
+      : fmts[0];
+
+    const fmtSel = makeSelect('output_format', fmts.map(f => [f, f.toUpperCase()]), defaultFmt);
+    grid.appendChild(makeOpt('Output Format', fmtSel));
+
+    const bitSel = makeSelect('audio_bitrate', BITRATE_OPTS, '192k');
+    const bitOpt = makeOpt('Audio Bitrate', bitSel);
+    grid.appendChild(bitOpt);
+
+    const crfSlider = makeSlider('crf', 0, 51, 23, '0 = lossless · 23 = default · 51 = worst');
+    const crfOpt = makeOpt('Video Quality (CRF)', crfSlider);
+    grid.appendChild(crfOpt);
+
+    const presetSel = makeSelect('preset', PRESET_OPTS, 'medium');
+    const presetOpt = makeOpt('Encoding Preset', presetSel);
+    grid.appendChild(presetOpt);
+
+    function toggleVideoOpts() {
+      const outE = fmtSel.value;
+      const show = isVideo(outE) && outE !== 'gif';
+      crfOpt.style.display    = show ? '' : 'none';
+      presetOpt.style.display = show ? '' : 'none';
+      bitOpt.style.display    = isAudio(outE) ? '' : (show ? '' : 'none');
+    }
+    fmtSel.addEventListener('change', toggleVideoOpts);
+    toggleVideoOpts();
+  }
+
+  else if (mode === 'extract') {
+    grid.appendChild(makeOpt('Output Format', makeSelect('output_format', AUDIO_FMTS.map(f => [f, f.toUpperCase()]), 'mp3')));
+    grid.appendChild(makeOpt('Audio Bitrate', makeSelect('audio_bitrate', BITRATE_OPTS, '192k')));
+  }
+
+  else if (mode === 'compress_audio') {
+    const compBitrates = BITRATE_OPTS.filter(([v]) => parseInt(v) <= 192);
+    grid.appendChild(makeOpt('Target Bitrate', makeSelect('audio_bitrate', compBitrates, '96k')));
+    const defaultFmt = e && AUDIO_FMTS.includes(e) ? e : 'mp3';
+    grid.appendChild(makeOpt('Output Format', makeSelect('output_format', AUDIO_FMTS.map(f => [f, f.toUpperCase()]), defaultFmt)));
+  }
+
+  else if (mode === 'compress_video') {
+    grid.appendChild(makeOpt('Quality (CRF)',
+      makeSlider('crf', 0, 51, 28, '18 = high quality  ·  28 = good balance  ·  40 = very small'), true));
+    grid.appendChild(makeOpt('Encoding Preset', makeSelect('preset', PRESET_OPTS, 'medium')));
+    grid.appendChild(makeOpt('Scale Resolution', makeSelect('resolution', [
+      ['','Original'],['3840x2160','4K (2160p)'],['1920x1080','1080p'],
+      ['1280x720','720p'],['854x480','480p'],['640x360','360p'],['426x240','240p'],
+    ], '')));
+    grid.appendChild(makeOpt('Audio Bitrate', makeSelect('audio_bitrate', BITRATE_OPTS, '96k')));
+    const videoFmts = VIDEO_FMTS.filter(f => f !== 'gif');
+    const defaultFmt = e && videoFmts.includes(e) ? e : 'mp4';
+    grid.appendChild(makeOpt('Output Format', makeSelect('output_format', videoFmts.map(f => [f, f.toUpperCase()]), defaultFmt)));
+  }
+
+  updateInfo();
+}
+
+function updateInfo() {
+  const box = document.getElementById('info-box');
+  if (mode === 'extract') {
+    box.style.display = '';
+    box.textContent = 'Extracts the audio track from a video file.';
+  } else if (mode === 'compress_video') {
+    box.style.display = '';
+    box.textContent = 'Video compression runs in your browser via WebAssembly — large files may take a few minutes.';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// ── Mode switching ─────────────────────────────────────────────────────────
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === m);
+  });
+
+  const inp = document.getElementById('file-input');
+  const hint = document.getElementById('accept-hint');
+  if (m === 'extract' || m === 'compress_video') {
+    inp.accept = 'video/*';
+    hint.textContent = 'Accepts video files (mp4, mkv, mov, avi, webm …)';
+  } else if (m === 'compress_audio') {
+    inp.accept = 'audio/*';
+    hint.textContent = 'Accepts audio files (mp3, flac, wav, aac, ogg …)';
+  } else {
+    inp.accept = 'audio/*,video/*';
+    hint.textContent = 'Supports all major audio & video formats';
+  }
+
+  buildOptions();
+  updateBtn();
+  clearResult();
+}
+
+function updateBtn() {
+  const btn = document.getElementById('conv-btn');
+  const lbl = document.getElementById('btn-label');
+  if (!file) {
+    btn.disabled = true; lbl.textContent = 'Select a file first'; return;
+  }
+  btn.disabled = false;
+  const labels = {
+    convert: 'Convert File', extract: 'Extract Audio',
+    compress_audio: 'Compress Audio', compress_video: 'Compress Video',
+  };
+  lbl.textContent = labels[mode] || 'Convert';
+}
+
+// ── Progress UI ────────────────────────────────────────────────────────────
+
+function showProgress(label) {
+  const wrap = document.getElementById('progress-wrap');
+  wrap.classList.add('show');
+  document.getElementById('progress-label').textContent = label;
+  document.getElementById('progress-pct').textContent = '';
+  document.getElementById('progress-elapsed').textContent = '';
+  document.getElementById('progress-eta').textContent = '';
+  setProgressValue(-1); // indeterminate
+}
+
+function setProgressValue(pct) {
+  const fill = document.getElementById('progress-fill');
+  const pctEl = document.getElementById('progress-pct');
+  if (pct < 0 || isNaN(pct)) {
+    fill.classList.add('indeterminate');
+    fill.style.width = '';
+    pctEl.textContent = '';
+  } else {
+    fill.classList.remove('indeterminate');
+    fill.style.width = Math.min(pct, 100).toFixed(1) + '%';
+    pctEl.textContent = Math.min(Math.floor(pct), 99) + '%';
+  }
+}
+
+function hideProgress() {
+  document.getElementById('progress-wrap').classList.remove('show');
+  stopElapsedTimer();
+}
+
+function startElapsedTimer() {
+  convStartTime = Date.now();
+  elapsedTimer = setInterval(() => {
+    const secs = (Date.now() - convStartTime) / 1000;
+    document.getElementById('progress-elapsed').textContent = 'Elapsed: ' + fmtSecs(secs);
+  }, 500);
+}
+
+function stopElapsedTimer() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+}
+
+function updateETA(progress) {
+  if (progress <= 0.02) return;
+  const elapsed = (Date.now() - convStartTime) / 1000;
+  const total = elapsed / progress;
+  const remaining = total - elapsed;
+  document.getElementById('progress-eta').textContent = 'ETA: ~' + fmtSecs(remaining);
+}
+
+// ── Conversion ─────────────────────────────────────────────────────────────
+
+function getParams() {
+  const p = {};
+  document.querySelectorAll('#options select, #options input').forEach(el => {
+    if (el.name) p[el.name] = el.value;
+  });
+  return p;
+}
+
+function buildCmd(inName, outName, params) {
+  const inExt  = ext(inName);
+  const outExt = ext(outName);
+  const bitrate = params.audio_bitrate || '128k';
+  const crf     = params.crf || '28';
+  const preset  = params.preset || 'medium';
+
+  const audioCodecArgs = (e) => {
+    const map = {
+      mp3: ['-c:a','libmp3lame'], aac: ['-c:a','aac'], m4a: ['-c:a','aac'],
+      flac:['-c:a','flac'],       wav: ['-c:a','pcm_s16le'],
+      ogg: ['-c:a','libvorbis'],  opus:['-c:a','libopus'],
+      wma: ['-c:a','wmav2'],      aiff:['-c:a','pcm_s16be'],
+      alac:['-c:a','alac'],       ac3: ['-c:a','ac3'],       mp2:['-c:a','mp2'],
+    };
+    const args = [...(map[e] || [])];
+    if (!LOSSLESS.has(e)) args.push('-b:a', bitrate);
+    return args;
+  };
+
+  if (mode === 'extract' || mode === 'compress_audio') {
+    return ['-i', inName, '-y', '-vn', ...audioCodecArgs(outExt), outName];
+  }
+
+  if (mode === 'compress_video') {
+    const cmd = ['-i', inName, '-y', '-c:v', 'libx264', '-crf', crf, '-preset', preset];
+    if (params.resolution) cmd.push('-vf', `scale=${params.resolution}:-2`);
+    cmd.push('-c:a', 'aac', '-b:a', bitrate, outName);
+    return cmd;
+  }
+
+  // convert mode
+  if (outExt === 'gif') {
+    const fps = params.gif_fps || '10';
+    const scale = params.gif_scale || '480';
+    return [
+      '-i', inName, '-y',
+      '-filter_complex',
+      `[0:v]fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer`,
+      '-loop', '0', outName,
+    ];
+  }
+
+  if (AUDIO_SET.has(outExt)) {
+    return ['-i', inName, '-y', '-vn', ...audioCodecArgs(outExt), outName];
+  }
+
+  const videoCodecMap = {
+    mp4: ['-c:v','libx264'],      mkv: ['-c:v','libx264'],
+    avi: ['-c:v','mpeg4'],        mov: ['-c:v','libx264'],
+    webm:['-c:v','libvpx-vp9','-c:a','libopus'],
+    flv: ['-c:v','libx264'],      m4v: ['-c:v','libx264'],
+    wmv: ['-c:v','wmv2','-c:a','wmav2'],
+    ts:  ['-c:v','libx264'],
+    mpg: ['-c:v','mpeg2video','-c:a','mp2'],
+    mpeg:['-c:v','mpeg2video','-c:a','mp2'],
+    '3gp':['-c:v','libx264','-c:a','aac'],
+  };
+  const hasAudioInCodecMap = new Set(['webm','wmv','mpg','mpeg','3gp']);
+  const vArgs = [...(videoCodecMap[outExt] || ['-c:v','libx264'])];
+  const cmd = ['-i', inName, '-y', ...vArgs];
+  if (!hasAudioInCodecMap.has(outExt) && !AUDIO_SET.has(inExt)) {
+    cmd.push('-c:a', 'aac', '-b:a', bitrate);
+  }
+  cmd.push(outName);
+  return cmd;
+}
+
+async function startConversion() {
+  if (!file) return;
+
+  const e = ext(file.name);
+  if ((mode === 'extract' || mode === 'compress_video') && !isVideo(e)) {
+    showError('This mode requires a video file.'); return;
+  }
+  if (mode === 'compress_audio' && !isAudio(e)) {
+    showError('This mode requires an audio file.'); return;
+  }
+
+  cancelled = false;
+
+  const btn    = document.getElementById('conv-btn');
+  const lbl    = document.getElementById('btn-label');
+  const cancel = document.getElementById('cancel-btn');
+  btn.disabled = true;
+  lbl.innerHTML = '<div class="spinner"></div> Processing…';
+  cancel.classList.add('show');
+  clearResult();
+
+  // Load ffmpeg if not yet ready
+  if (!ffmpegReady) {
+    showProgress('Downloading ffmpeg.wasm…');
+    startElapsedTimer();
+    await initFFmpeg();
+    if (!ffmpegReady) {
+      showError('Failed to load ffmpeg.wasm. Check your internet connection.');
+      resetBtn(); return;
+    }
+    stopElapsedTimer();
+  }
+
+  if (cancelled) { resetBtn(); return; }
+
+  // Wire up progress events
+  const params = getParams();
+  const outExt = params.output_format || e;
+  const inName  = `input.${e}`;
+  const outName = `output.${outExt}`;
+
+  let lastProgress = 0;
+  ffmpeg.on('progress', ({ progress }) => {
+    if (cancelled) return;
+    const pct = progress * 100;
+    if (!isNaN(pct) && pct >= 0) {
+      lastProgress = pct;
+      setProgressValue(pct);
+      updateETA(progress);
+    }
+  });
+
+  showProgress('Processing…');
+  startElapsedTimer();
+
+  try {
+    setProgressValue(-1); // indeterminate during file read
+    document.getElementById('progress-label').textContent = 'Reading file…';
+    await ffmpeg.writeFile(inName, await fetchFile(file));
+
+    if (cancelled) throw new Error('cancelled');
+
+    document.getElementById('progress-label').textContent = 'Converting…';
+    const cmd = buildCmd(inName, outName, params);
+    await ffmpeg.exec(cmd);
+
+    if (cancelled) throw new Error('cancelled');
+
+    document.getElementById('progress-label').textContent = 'Finalising…';
+    setProgressValue(100);
+    document.getElementById('progress-pct').textContent = '100%';
+    document.getElementById('progress-eta').textContent = '';
+
+    const data = await ffmpeg.readFile(outName);
+
+    // Clean up virtual FS
+    try { await ffmpeg.deleteFile(inName); } catch(_) {}
+    try { await ffmpeg.deleteFile(outName); } catch(_) {}
+
+    const mimeMap = {
+      mp3:'audio/mpeg', aac:'audio/aac', flac:'audio/flac', wav:'audio/wav',
+      ogg:'audio/ogg', m4a:'audio/mp4', opus:'audio/ogg', wma:'audio/x-ms-wma',
+      mp4:'video/mp4', mkv:'video/x-matroska', avi:'video/x-msvideo',
+      mov:'video/quicktime', webm:'video/webm', gif:'image/gif',
+    };
+    const mime = mimeMap[outExt] || 'application/octet-stream';
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    const blob = new Blob([data.buffer], { type: mime });
+    currentBlobUrl = URL.createObjectURL(blob);
+
+    const stem = file.name.replace(/\.[^.]+$/, '');
+    const downloadName = `${stem}.${outExt}`;
+    const elapsed = (Date.now() - convStartTime) / 1000;
+
+    stopElapsedTimer();
+    hideProgress();
+    showSuccess(currentBlobUrl, downloadName, file.size, blob.size, elapsed);
+
+  } catch (err) {
+    stopElapsedTimer();
+    hideProgress();
+    if (err.message !== 'cancelled') {
+      const msg = err.message || String(err);
+      showError(msg.includes('ffmpeg') || msg.includes('No such file')
+        ? 'Conversion failed. The format combination may not be supported.\n\n' + msg
+        : msg);
+    }
+  }
+
+  resetBtn();
+}
+
+function cancelConversion() {
+  cancelled = true;
+  if (ffmpeg) {
+    ffmpeg.terminate();
+    ffmpegReady = false;
+    ffmpeg = null;
+    // Re-init silently for next use
+    initFFmpeg();
+  }
+  stopElapsedTimer();
+  hideProgress();
+  resetBtn();
+}
+
+function resetBtn() {
+  document.getElementById('cancel-btn').classList.remove('show');
+  document.getElementById('conv-btn').disabled = false;
+  updateBtn();
+}
+
+// ── Result display ─────────────────────────────────────────────────────────
+
+function showSuccess(blobUrl, downloadName, inSize, outSize, elapsed) {
+  const res = document.getElementById('result');
+  let changeHtml = '';
+  if (inSize > 0 && outSize > 0) {
+    const pct = ((1 - outSize / inSize) * 100).toFixed(1);
+    const shrunk = parseFloat(pct) > 0;
+    changeHtml = `<div class="stat">
+      <div class="stat-lbl">Size Change</div>
+      <div class="stat-val" style="color:${shrunk ? 'var(--success)' : 'var(--danger)'}">
+        ${shrunk ? '↓ ' + pct + '%' : '↑ ' + Math.abs(parseFloat(pct)).toFixed(1) + '%'}
+      </div>
+    </div>`;
+  }
+
+  const dlBtn = document.createElement('a');
+  dlBtn.className = 'dl-btn';
+  dlBtn.href = blobUrl;
+  dlBtn.download = downloadName;
+  dlBtn.textContent = '⬇ Download ' + downloadName;
+
+  res.innerHTML = `
+    <div class="res-success">
+      <div class="res-title">✓ Done in ${fmtSecs(elapsed)}!</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-lbl">Input</div>
+          <div class="stat-val">${fmtBytes(inSize)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Output</div>
+          <div class="stat-val">${fmtBytes(outSize)}</div>
+        </div>
+        ${changeHtml}
+      </div>
+      <div id="dl-placeholder"></div>
+      <br>
+      <button class="new-btn" onclick="removeFile()">+ Convert another file</button>
+    </div>`;
+  document.getElementById('dl-placeholder').replaceWith(dlBtn);
+  res.className = 'result show';
+}
+
+function showError(msg) {
+  const res = document.getElementById('result');
+  const detail = document.createElement('div');
+  detail.className = 'err-detail';
+  detail.textContent = msg;
+  const wrap = document.createElement('div');
+  wrap.className = 'res-error';
+  const title = document.createElement('div');
+  title.className = 'res-title';
+  title.textContent = '✗ Conversion failed';
+  wrap.appendChild(title);
+  wrap.appendChild(detail);
+  res.innerHTML = '';
+  res.appendChild(wrap);
+  res.className = 'result show';
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+buildOptions();
+updateBtn();
+initFFmpeg();
+</script>
+</body>
+</html>

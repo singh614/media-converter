@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Converter</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --card: #21262d;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --accent-hover: #79b8ff;
+  --success: #3fb950;
+  --danger: #f85149;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --bright: #f0f6fc;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+}
+
+.container { max-width: 740px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 2rem; }
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #58a6ff, #bc8cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-top: 0.6rem;
+  font-weight: 500;
+}
+.badge.ok  { background: rgba(63,185,80,.15); color: var(--success); border: 1px solid rgba(63,185,80,.25); }
+.badge.err { background: rgba(248,81,73,.12); color: var(--danger);  border: 1px solid rgba(248,81,73,.25); }
+.badge.loading { background: rgba(88,166,255,.1); color: var(--accent); border: 1px solid rgba(88,166,255,.2); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.85rem 0.25rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  letter-spacing: 0.01em;
+}
+
+.tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+
+.tab.active {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+.tab-icon { font-size: 1rem; line-height: 1; }
+
+/* Body */
+.body { padding: 1.5rem; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(88,166,255,.05);
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.up-icon { font-size: 2.2rem; margin-bottom: 0.6rem; color: var(--muted); }
+
+.upload-zone h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bright);
+  margin-bottom: 0.25rem;
+}
+
+.upload-zone p { font-size: 0.78rem; color: var(--muted); }
+
+/* File info bar */
+.file-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0.65rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.file-bar.show { display: flex; }
+
+.file-bar-icon { font-size: 1.4rem; }
+
+.file-bar-info { flex: 1; min-width: 0; }
+
+.file-bar-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-bar-size { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  border-radius: 5px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.remove-btn:hover { color: var(--danger); background: rgba(248,81,73,.1); }
+
+/* Options grid */
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+
+.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.opt.span2 { grid-column: 1 / -1; }
+
+.opt label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.opt select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--bright);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.18s;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.opt select:focus { border-color: var(--accent); }
+
+/* Slider */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(88,166,255,.2);
+}
+
+.slider-val {
+  min-width: 30px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.crf-hint {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Convert button */
+.conv-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 9px;
+  color: #000;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+}
+
+.conv-btn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,166,255,.3); }
+.conv-btn:active:not(:disabled) { transform: translateY(0); }
+.conv-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2.5px solid rgba(0,0,0,.25);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Result */
+.result { margin-top: 1.25rem; display: none; }
+.result.show { display: block; }
+
+.res-success {
+  background: rgba(63,185,80,.08);
+  border: 1px solid rgba(63,185,80,.3);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+}
+
+.res-error {
+  background: rgba(248,81,73,.08);
+  border: 1px solid rgba(248,81,73,.3);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+}
+
+.res-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 0.75rem;
+}
+
+.res-success .res-title { color: var(--success); }
+.res-error  .res-title { color: var(--danger); }
+
+.stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat { display: flex; flex-direction: column; gap: 2px; }
+
+.stat-lbl {
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stat-val { font-size: 0.9rem; font-weight: 700; color: var(--bright); }
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0.55rem 1.1rem;
+  background: var(--success);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.18s;
+}
+
+.dl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.err-detail {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.72rem;
+  color: var(--danger);
+  background: rgba(248,81,73,.06);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(248,81,73,.15);
+}
+
+.new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.new-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.05); }
+
+@media (max-width: 500px) {
+  .options { grid-template-columns: 1fr; }
+  .opt.span2 { grid-column: 1; }
+  .tab span { display: none; }
+  header h1 { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Media Converter</h1>
+    <p>Convert, extract & compress audio and video — runs 100% locally</p>
+    <div id="ffmpeg-badge" class="badge loading">Checking FFmpeg...</div>
+  </header>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" data-mode="convert" onclick="setMode('convert')">
+        <span class="tab-icon">⇄</span><span>Convert</span>
+      </button>
+      <button class="tab" data-mode="extract" onclick="setMode('extract')">
+        <span class="tab-icon">♪</span><span>Extract Audio</span>
+      </button>
+      <button class="tab" data-mode="compress_audio" onclick="setMode('compress_audio')">
+        <span class="tab-icon">◈</span><span>Compress Audio</span>
+      </button>
+      <button class="tab" data-mode="compress_video" onclick="setMode('compress_video')">
+        <span class="tab-icon">▣</span><span>Compress Video</span>
+      </button>
+    </div>
+
+    <div class="body">
+      <div class="upload-zone" id="upload-zone"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <input type="file" id="file-input" accept="audio/*,video/*" onchange="onFileSelect(event)">
+        <div class="up-icon">⬆</div>
+        <h3>Drop your file here</h3>
+        <p id="accept-hint">Supports all major audio &amp; video formats</p>
+      </div>
+
+      <div class="file-bar" id="file-bar">
+        <div class="file-bar-icon" id="file-icon">🎵</div>
+        <div class="file-bar-info">
+          <div class="file-bar-name" id="file-name"></div>
+          <div class="file-bar-size" id="file-size"></div>
+        </div>
+        <button class="remove-btn" onclick="removeFile()" title="Remove file">✕</button>
+      </div>
+
+      <div class="options" id="options"></div>
+
+      <button class="conv-btn" id="conv-btn" onclick="startConversion()" disabled>
+        <span id="btn-label">Select a file first</span>
+      </button>
+
+      <div class="result" id="result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AUDIO_FMTS = ['mp3','aac','flac','wav','ogg','m4a','opus','wma','aiff','alac','ac3'];
+const VIDEO_FMTS = ['mp4','mkv','avi','mov','webm','flv','m4v','wmv','ts','mpg','gif'];
+const AUDIO_SET = new Set(['mp3','aac','flac','wav','ogg','m4a','opus','wma','aiff','alac','ac3','amr','mp2']);
+const VIDEO_SET = new Set(['mp4','mkv','avi','mov','webm','flv','m4v','wmv','ts','mpg','mpeg','3gp','gif','rm']);
+
+let mode = 'convert';
+let file = null;
+
+// Check FFmpeg on load
+fetch('/api/ffmpeg-check').then(r => r.json()).then(d => {
+  const el = document.getElementById('ffmpeg-badge');
+  if (d.available) {
+    el.className = 'badge ok';
+    el.textContent = '✓ FFmpeg ready';
+  } else {
+    el.className = 'badge err';
+    el.textContent = '✗ FFmpeg missing — run: brew install ffmpeg';
+  }
+}).catch(() => {
+  const el = document.getElementById('ffmpeg-badge');
+  el.className = 'badge err';
+  el.textContent = '✗ Server not reachable';
+});
+
+function ext(filename) {
+  return filename.split('.').pop().toLowerCase();
+}
+
+function isAudio(e) { return AUDIO_SET.has(e); }
+function isVideo(e) { return VIDEO_SET.has(e); }
+
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function makeSelect(name, opts, def) {
+  const sel = document.createElement('select');
+  sel.name = name;
+  sel.id = name;
+  opts.forEach(([v, l]) => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = l || v.toUpperCase();
+    if (v === def) o.selected = true;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+function makeOpt(label, el, span2 = false) {
+  const d = document.createElement('div');
+  d.className = 'opt' + (span2 ? ' span2' : '');
+  const lbl = document.createElement('label');
+  lbl.textContent = label;
+  d.appendChild(lbl);
+  d.appendChild(el);
+  return d;
+}
+
+function makeSlider(name, min, max, val, hint) {
+  const row = document.createElement('div');
+  row.className = 'slider-row';
+  const s = document.createElement('input');
+  s.type = 'range'; s.name = name; s.id = name;
+  s.min = min; s.max = max; s.value = val;
+  const disp = document.createElement('span');
+  disp.className = 'slider-val';
+  disp.textContent = val;
+  s.oninput = () => disp.textContent = s.value;
+  row.appendChild(s);
+  row.appendChild(disp);
+  const wrap = document.createElement('div');
+  wrap.appendChild(row);
+  if (hint) {
+    const h = document.createElement('div');
+    h.className = 'crf-hint';
+    h.textContent = hint;
+    wrap.appendChild(h);
+  }
+  return wrap;
+}
+
+function buildOptions() {
+  const grid = document.getElementById('options');
+  grid.innerHTML = '';
+  const e = file ? ext(file.name) : null;
+
+  const bitrateOpts = [
+    ['32k','32 kbps'], ['48k','48 kbps'], ['64k','64 kbps'],
+    ['96k','96 kbps'], ['128k','128 kbps'], ['160k','160 kbps'],
+    ['192k','192 kbps'], ['256k','256 kbps'], ['320k','320 kbps'],
+  ];
+
+  if (mode === 'convert') {
+    let fmts;
+    if (!e) { fmts = AUDIO_FMTS.concat(VIDEO_FMTS); }
+    else if (isAudio(e)) { fmts = AUDIO_FMTS; }
+    else if (isVideo(e)) { fmts = VIDEO_FMTS; }
+    else { fmts = AUDIO_FMTS.concat(VIDEO_FMTS); }
+
+    const defaultFmt = (e && fmts.includes(e))
+      ? (fmts[0] === e ? fmts[1] || fmts[0] : fmts[0])
+      : fmts[0];
+
+    const fmtSel = makeSelect('output_format', fmts.map(f => [f, f.toUpperCase()]), defaultFmt);
+    grid.appendChild(makeOpt('Output Format', fmtSel));
+
+    const bitSel = makeSelect('audio_bitrate', bitrateOpts, '192k');
+    const bitOpt = makeOpt('Audio Bitrate', bitSel);
+    grid.appendChild(bitOpt);
+
+    const crfSlider = makeSlider('crf', 0, 51, 23, '0 = lossless, 23 = default, 51 = worst');
+    const crfOpt = makeOpt('Video Quality (CRF)', crfSlider);
+    grid.appendChild(crfOpt);
+
+    const presetSel = makeSelect('preset', [
+      ['ultrafast','Ultra Fast'],['superfast','Super Fast'],['veryfast','Very Fast'],
+      ['faster','Faster'],['fast','Fast'],['medium','Medium (default)'],
+      ['slow','Slow'],['slower','Slower'],['veryslow','Very Slow (best)'],
+    ], 'medium');
+    const presetOpt = makeOpt('Encoding Preset', presetSel);
+    grid.appendChild(presetOpt);
+
+    function toggleVideoOpts() {
+      const outE = fmtSel.value;
+      const show = isVideo(outE) && outE !== 'gif';
+      crfOpt.style.display   = show ? '' : 'none';
+      presetOpt.style.display = show ? '' : 'none';
+    }
+    fmtSel.addEventListener('change', toggleVideoOpts);
+    toggleVideoOpts();
+  }
+
+  else if (mode === 'extract') {
+    const fmtSel = makeSelect('output_format', AUDIO_FMTS.map(f => [f, f.toUpperCase()]), 'mp3');
+    grid.appendChild(makeOpt('Output Format', fmtSel));
+    const bitSel = makeSelect('audio_bitrate', bitrateOpts, '192k');
+    grid.appendChild(makeOpt('Audio Bitrate', bitSel));
+  }
+
+  else if (mode === 'compress_audio') {
+    const compBitrates = [
+      ['32k','32 kbps (tiny)'],['48k','48 kbps'],['64k','64 kbps (small)'],
+      ['96k','96 kbps'],['128k','128 kbps (standard)'],['160k','160 kbps'],
+      ['192k','192 kbps (high quality)'],
+    ];
+    const bitSel = makeSelect('audio_bitrate', compBitrates, '96k');
+    grid.appendChild(makeOpt('Target Bitrate', bitSel));
+
+    const defaultFmt = e && AUDIO_FMTS.includes(e) ? e : 'mp3';
+    const fmtSel = makeSelect('output_format', AUDIO_FMTS.map(f => [f, f.toUpperCase()]), defaultFmt);
+    grid.appendChild(makeOpt('Output Format', fmtSel));
+  }
+
+  else if (mode === 'compress_video') {
+    const crfSlider = makeSlider('crf', 0, 51, 28, '18 = high quality  •  28 = good balance  •  40 = very small file');
+    grid.appendChild(makeOpt('Quality (CRF)', crfSlider, true));
+
+    const presetSel = makeSelect('preset', [
+      ['ultrafast','Ultra Fast'],['superfast','Super Fast'],['veryfast','Very Fast'],
+      ['faster','Faster'],['fast','Fast'],['medium','Medium'],
+      ['slow','Slow (better compression)'],['slower','Slower'],['veryslow','Very Slow (best)'],
+    ], 'medium');
+    grid.appendChild(makeOpt('Encoding Preset', presetSel));
+
+    const resSel = makeSelect('resolution', [
+      ['','Original resolution'],['3840x2160','4K (2160p)'],
+      ['1920x1080','1080p'],['1280x720','720p'],
+      ['854x480','480p'],['640x360','360p'],['426x240','240p'],
+    ], '');
+    grid.appendChild(makeOpt('Scale Resolution', resSel));
+
+    const bitSel = makeSelect('audio_bitrate', bitrateOpts, '96k');
+    grid.appendChild(makeOpt('Audio Bitrate', bitSel));
+
+    const videoFmts = VIDEO_FMTS.filter(f => f !== 'gif');
+    const defaultFmt = e && videoFmts.includes(e) ? e : 'mp4';
+    const fmtSel = makeSelect('output_format', videoFmts.map(f => [f, f.toUpperCase()]), defaultFmt);
+    grid.appendChild(makeOpt('Output Format', fmtSel));
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === m);
+  });
+
+  const inp = document.getElementById('file-input');
+  if (m === 'extract' || m === 'compress_video') {
+    inp.accept = 'video/*';
+    document.getElementById('accept-hint').textContent = 'Accepts video files (mp4, mkv, mov, avi, webm …)';
+  } else if (m === 'compress_audio') {
+    inp.accept = 'audio/*';
+    document.getElementById('accept-hint').textContent = 'Accepts audio files (mp3, flac, wav, aac, ogg …)';
+  } else {
+    inp.accept = 'audio/*,video/*';
+    document.getElementById('accept-hint').textContent = 'Supports all major audio & video formats';
+  }
+
+  buildOptions();
+  updateBtn();
+  document.getElementById('result').className = 'result';
+  document.getElementById('result').innerHTML = '';
+}
+
+function onFileSelect(e) {
+  const f = e.target.files[0];
+  if (f) loadFile(f);
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+}
+
+function onDragLeave() {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+}
+
+function loadFile(f) {
+  file = f;
+  const e = ext(f.name);
+  document.getElementById('file-icon').textContent = isVideo(e) ? '🎬' : '🎵';
+  document.getElementById('file-name').textContent = f.name;
+  document.getElementById('file-size').textContent = fmtBytes(f.size);
+  document.getElementById('file-bar').classList.add('show');
+  document.getElementById('upload-zone').style.display = 'none';
+  buildOptions();
+  updateBtn();
+  document.getElementById('result').className = 'result';
+  document.getElementById('result').innerHTML = '';
+}
+
+function removeFile() {
+  file = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-bar').classList.remove('show');
+  document.getElementById('upload-zone').style.display = '';
+  buildOptions();
+  updateBtn();
+  document.getElementById('result').className = 'result';
+  document.getElementById('result').innerHTML = '';
+}
+
+function updateBtn() {
+  const btn = document.getElementById('conv-btn');
+  const lbl = document.getElementById('btn-label');
+  if (!file) {
+    btn.disabled = true;
+    lbl.textContent = 'Select a file first';
+    return;
+  }
+  btn.disabled = false;
+  const labels = {
+    convert: 'Convert File',
+    extract: 'Extract Audio',
+    compress_audio: 'Compress Audio',
+    compress_video: 'Compress Video',
+  };
+  lbl.textContent = labels[mode] || 'Convert';
+}
+
+async function startConversion() {
+  if (!file) return;
+
+  // Validate file type for mode
+  const e = ext(file.name);
+  if ((mode === 'extract' || mode === 'compress_video') && !isVideo(e)) {
+    showError('This mode requires a video file. Please select a video.');
+    return;
+  }
+  if (mode === 'compress_audio' && !isAudio(e)) {
+    showError('This mode requires an audio file. Please select an audio file.');
+    return;
+  }
+
+  const btn = document.getElementById('conv-btn');
+  const lbl = document.getElementById('btn-label');
+  const res = document.getElementById('result');
+
+  btn.disabled = true;
+  lbl.innerHTML = '<div class="spinner"></div> Processing…';
+  res.className = 'result';
+  res.innerHTML = '';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('mode', mode);
+
+  document.querySelectorAll('#options select, #options input').forEach(el => {
+    if (el.name) fd.append(el.name, el.value);
+  });
+
+  try {
+    const r = await fetch('/api/convert', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (data.success) showSuccess(data);
+    else showError(data.error || 'Conversion failed');
+  } catch (err) {
+    showError('Request failed: ' + err.message);
+  }
+
+  btn.disabled = false;
+  updateBtn();
+}
+
+function showSuccess(data) {
+  const res = document.getElementById('result');
+  const inSize = file ? file.size : 0;
+  const outSize = data.size || 0;
+  let changeHtml = '';
+  if (inSize > 0 && outSize > 0) {
+    const pct = ((1 - outSize / inSize) * 100).toFixed(1);
+    const positive = parseFloat(pct) > 0;
+    changeHtml = `<div class="stat">
+      <div class="stat-lbl">Size Change</div>
+      <div class="stat-val" style="color:${positive ? 'var(--success)' : 'var(--danger)'}">
+        ${positive ? '↓ ' + pct + '%' : '↑ ' + Math.abs(pct) + '%'}
+      </div>
+    </div>`;
+  }
+
+  res.innerHTML = `
+    <div class="res-success">
+      <div class="res-title">✓ Done!</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-lbl">Input</div>
+          <div class="stat-val">${fmtBytes(inSize)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Output</div>
+          <div class="stat-val">${fmtBytes(outSize)}</div>
+        </div>
+        ${changeHtml}
+      </div>
+      <a class="dl-btn"
+         href="/api/download/${data.file_id}/${encodeURIComponent(data.download_name)}"
+         download="${esc(data.download_name)}">
+        ⬇ Download ${esc(data.download_name)}
+      </a>
+      <br>
+      <button class="new-btn" onclick="removeFile()">+ Convert another file</button>
+    </div>`;
+  res.className = 'result show';
+}
+
+function showError(msg) {
+  const res = document.getElementById('result');
+  res.innerHTML = `
+    <div class="res-error">
+      <div class="res-title">✗ Conversion failed</div>
+      <div class="err-detail">${esc(msg)}</div>
+    </div>`;
+  res.className = 'result show';
+}
+
+// Init
+buildOptions();
+updateBtn();
+</script>
+</body>
+</html>
