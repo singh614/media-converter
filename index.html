@@ -553,7 +553,7 @@ header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.9rem; }
            ondragover="onDragOver(event)"
            ondragleave="onDragLeave(event)"
            ondrop="onDrop(event)">
-        <input type="file" id="file-input" accept="audio/*,video/*" onchange="onFileSelect(event)">
+        <input type="file" id="file-input" accept="audio/*,video/*,.mkv,.avi,.wmv,.flv,.ts,.mpg,.mpeg,.3gp,.rm,.m4v,.wma,.aiff,.alac,.ac3,.opus,.ogg" onchange="onFileSelect(event)">
         <div class="up-icon">⬆</div>
         <h3>Drop your file here</h3>
         <p id="accept-hint">Supports all major audio &amp; video formats</p>
@@ -892,13 +892,13 @@ function setMode(m) {
   const inp = document.getElementById('file-input');
   const hint = document.getElementById('accept-hint');
   if (m === 'extract' || m === 'compress_video') {
-    inp.accept = 'video/*';
+    inp.accept = 'video/*,.mkv,.avi,.wmv,.flv,.ts,.mpg,.mpeg,.3gp,.rm,.m4v';
     hint.textContent = 'Accepts video files (mp4, mkv, mov, avi, webm …)';
   } else if (m === 'compress_audio') {
-    inp.accept = 'audio/*';
+    inp.accept = 'audio/*,.wma,.aiff,.alac,.ac3,.opus,.ogg,.m4a';
     hint.textContent = 'Accepts audio files (mp3, flac, wav, aac, ogg …)';
   } else {
-    inp.accept = 'audio/*,video/*';
+    inp.accept = 'audio/*,video/*,.mkv,.avi,.wmv,.flv,.ts,.mpg,.mpeg,.3gp,.rm,.m4v,.wma,.aiff,.alac,.ac3,.opus,.ogg';
     hint.textContent = 'Supports all major audio & video formats';
   }
 
